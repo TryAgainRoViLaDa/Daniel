@@ -2,10 +2,14 @@ var config = {
     type: Phaser.AUTO,
     width:850,
     height:600,
+    fps: {
+        target:60,
+        forceSetTimeOut:true
+    },
     physics:{
         default:'arcade',
         arcade:{
-            debug: true,
+            debug: false,
             gravity:{y:0}
         }
     },
@@ -32,11 +36,12 @@ var NPCY;
 var NPCX;
 var velocidad = 3;
 var velocidad2 = 1;
-var velocidadF = 6;
+var velocidadF = 12;
 var veracidadNPC = false;
-var vidas = 100;
+var vidas = 7;
 var malo;
-var N = 60;
+var malo2;
+var N = 160;
 var variableCombate = 0;
 
 var veracidad = false;
@@ -45,18 +50,28 @@ var attack = false;
 var attack2 = false;
 var attack3 = false;
 var inmovil = false;
+var muerto = false;
+var malvado;
+var mision = false;
+var enemigosM = 0;
+var C = 0;
+var C2 = 0;
+var CT = false;
+var C2T = false;
 
 
 function preload() {
 
     this.load.image('gameTiles', 'tileset/IceTileset.png');
-    this.load.tilemapTiledJSON('tilemap', 'maps/nieve.json');
+    this.load.tilemapTiledJSON('tilemap', 'maps/juanito.json');
     this.load.image('NPC', 'assets/NPC.png');
     this.load.image('texto', 'assets/bafarada1.png');
     this.load.image('texto2', 'assets/bafarada2.png');
     this.load.image('enemigoBasico', 'assets/enemigoBasico.png');
     this.load.image('enemigoArquero', 'assets/enemigoArquero.png');
     this.load.image('enemyArrow', 'assets/enemyArcher.png');
+    this.load.image('heart', 'assets/heart.png');
+    scene = this;
 
     this.load.spritesheet('dude', 
         'assets/personaje.png',
@@ -80,13 +95,10 @@ function create() {
     suelo.setDepth(0);
     obstaculos.setDepth(0);
 
-    // Spawn
-    const spawn = map.findObject("objetos", obj => obj.name === "Spawn");
-
     // Camara-Player
     this.cameras.main.setBounds(0, 0, 1280 * 2, 1280 * 2);
     this.physics.world.setBounds(0, 0, 1280 * 2, 1280 * 2);
-    this.player = this.physics.add.sprite(60, 2500, 'dude');
+    this.player = this.physics.add.sprite(0, 0, 'dude');
     this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
 
     // Personajes
@@ -107,6 +119,31 @@ function create() {
     basicEnemyList = this.physics.add.group();
     archerEnemyList = this.physics.add.group();
     enemyArrowList = this.physics.add.group();
+    heartList = this.physics.add.group();
+
+    // Spawn
+    const spawn = map.createFromObjects("Objetos");
+    spawn.forEach(obj=>
+    {
+        obj.setAlpha(0);
+        if (obj.name == "Spawn") 
+        {
+            this.player.x = obj.x;
+            this.player.y = obj.y;
+        }
+
+        if (obj.name == "Goblin") 
+        {
+            crearEnemigoBasico(obj);
+        }
+
+        if (obj.name == "Esqueleto") 
+        {
+            crearEnemigoArcher(obj);
+        }
+    })
+    this.player.detector = this.add.rectangle(this.player.x, this.player.y, 100, 100);
+    this.physics.add.existing(this.player.detector, true);
 
     // Colisiones
     this.physics.add.collider(this.player, obstaculos);
@@ -150,9 +187,11 @@ function create() {
     this.physics.add.overlap(this.player, basicEnemyList, enfrentamientoEbasicoP, null, this);
     this.physics.add.overlap(this.player, archerEnemyList, enfrentamientoEarcherP, null, this);
     this.physics.add.overlap(this.player, enemyArrowList, playerDieArrow, null, this);
+    this.physics.add.overlap(this.player, heartList, aumentarVida, null, this);
 
     //Scoretexts
-    vidaText = this.add.text(0, 0, 'Vidas: 100', { fontSize: '20px', fill: 'black' });
+    vidaText = this.add.text(0, 0, 'Vidas: 7', { fontSize: '20px', fill: 'black' }).setScrollFactor(0);
+    Quest = this.add.text(280, 0, 'Objetivo: Asesina a dos enemigos y encuentra al aldeano perdido', { fontSize: '15px', fill: 'black' }).setScrollFactor(0);
 }
 
 function update()
@@ -161,10 +200,11 @@ function update()
     contadores();
     hablarNPC();
     movementBasicEnemy();
-    crearEnemigoBasico();
-    crearEnemigoArcher();
     movementArcherEnemy();
-    disparoArcher();
+    if (enemigosM >= 2) 
+    {
+        mision = true;
+    }
 }
 
 function contadores()
@@ -181,7 +221,15 @@ function contadores()
         scorecd=scorecd-1;
     }
 
-    N--;
+    if (CT == true) 
+    {
+        C--;
+    }
+
+    if (C2T == true) 
+    {
+        C2--;
+    }
 }
 
 function hablarNPC()
@@ -203,7 +251,7 @@ function hablarNPC()
 
 function hablar1()
 {
-    if(KeyE.isDown && cd==0 && mensaje==0 && inicio==0)
+    if(KeyE.isDown && cd==0 && mensaje==0 && inicio==0 && mision == true)
     {
         texto = this.physics.add.sprite(NPCX+30, NPCY-60, 'texto');
         texto.setScale(0.2);
@@ -229,7 +277,7 @@ function hablar2()
 
 function textoInteraccion()
 {
-    if(scorecd<=0)
+    if(scorecd<=0 && mision == true)
     {
         scoreText = this.add.text(NPCX-155, NPCY+20, 'Pulsa E para hablar y SPACE para continuar', { fontSize: '15px', fill: 'black' });
         scorecd=200;
@@ -245,45 +293,70 @@ function destruirTexto()
     auxiliar=1;
 }
 
-function crearEnemigoBasico()
+function crearEnemigoBasico(obj)
 {
-    if (veracidad == false) 
-    {
-        var enemy = basicEnemyList.create(400, 2200, 'enemigoBasico');
-        enemy.body.setSize(3000, 3000, 30000, 3000);
-        enemy.setScale(0.08, 0.08);
-        veracidad = true;
-    }
+    var enemy = basicEnemyList.create(obj.x, obj.y, 'enemigoBasico');
+    enemy.body.setSize(500, 600);
+    enemy.setScale(0.08, 0.08);
+    veracidad = true;
+    malo2 = enemy;
+    enemy.attack = false;
 }
 
-function movementBasicEnemy()
-{
-    if (attack == true) 
-    { 
-        for (var i = 0; i < basicEnemyList.getChildren().length; i++) 
-        {   //MOVIMIENTO ENEMIGO-DISPARO ENEMIGO//
-            var enemy = basicEnemyList.getChildren()[i];
+function movementBasicEnemy(enemy)
+{ 
+    /*for (var i = 0; i < basicEnemyList.getChildren().length; i++) 
+    {   //MOVIMIENTO ENEMIGO-DISPARO ENEMIGO//
+        var enemy = basicEnemyList.getChildren()[i];
+        if (enemy.attack == true) 
+        { 
             enemy.direccion = new Phaser.Math.Vector2(player.x-enemy.x,player.y-enemy.y); 
             enemy.setVelocityX(velocidad * enemy.direccion.x/2);
             enemy.setVelocityY(velocidad * enemy.direccion.y/2);
         }
+    }*/
+    if (muerto == false && inmovil == false) 
+    {
+             Phaser.Actions.Call(basicEnemyList.getChildren(), function(go) {
+                if (go.attack == true) 
+                {
+                    scene.physics.moveTo(go, this.player.x, this.player.y, 200);
+                }
+        })
+    }
+    else
+    {
+        malo2.setVelocityX(0);
+        malo2.setVelocityY(0);
     }
 }
 
 
 function enfrentamientoEbasicoP(objeto1, objeto2)
 {
-    attack = true;
+    objeto2.attack = true;
     if (SPACE.isDown) 
     {
         objeto2.destroy();
+        enemigosM++;
         veracidad = false;
         attack = false;
-        aumentarVida();
+        var numeroR = Phaser.Math.Between(1, 1);
+        if (numeroR == 1) 
+        {
+            var heart = heartList.create(objeto2.x, objeto2.y, 'heart');
+            heart.setScale(0.1, 0.1);
+        }
     }
 
     variableCombate = 1;
-    decrementarVida();
+    
+    CT = true;
+    if (C <= 0) 
+    {
+        decrementarVida();
+        C = 50;
+    }
     if (vidas <= 0) 
     {
         this.player.destroy();
@@ -293,19 +366,30 @@ function enfrentamientoEbasicoP(objeto1, objeto2)
 
 function enfrentamientoEarcherP(objeto1, objeto2)
 {
-    attack3 = true;
-    attack2 = true;
+    objeto2.attack3 = true;
+    objeto2.attack2 = true;
     if (SPACE.isDown) 
     {
+        enemigosM++;
         objeto2.destroy();
         veracidad2 = false;
-        attack2 = false;
-        attack3 = false;
-        aumentarVida();
+        objeto2.attack2 = false;
+        objeto2.attack3 = false;
+        var numeroR2 = Phaser.Math.Between(1, 3);
+        if (numeroR2 == 2)
+        {
+            var heart = heartList.create(objeto2.x, objeto2.y, 'heart');
+            heart.setScale(0.1, 0.1);
+        }
     }
 
     variableCombate = 1;
-    decrementarVida();
+    C2T = true;
+    if (C2 <= 0) 
+    {
+        decrementarVida();
+        C2 = 50
+    }
     if (vidas <= 0) 
     {
         this.player.destroy();
@@ -313,54 +397,71 @@ function enfrentamientoEarcherP(objeto1, objeto2)
     }
 }
 
-function crearEnemigoArcher()
+function crearEnemigoArcher(obj)
 {
-    if (veracidad2 == false) 
-    {
-        var enemy = archerEnemyList.create(800, 2200, 'enemigoArquero');
-        enemy.body.setSize(200, 600);
-        enemy.setScale(0.07, 0.07);
-        veracidad2 = true;
-        malo = enemy;
-    }
+    var enemy = archerEnemyList.create(obj.x, obj.y, 'enemigoArquero');
+    enemy.body.setSize(1000, 1000);
+    enemy.setScale(0.07, 0.07);
+    malo = enemy;
+    enemy.attack3 = false;
+    malvado = enemy.attack3;
+    enemy.attack2 = false;
+    enemy.N = 160;
 }
 
 function movementArcherEnemy()
-{
-    if (attack2 == true) 
-    { 
-        for (var i = 0; i < archerEnemyList.getChildren().length; i++) 
-        {   //MOVIMIENTO ENEMIGO-DISPARO ENEMIGO//
-            var enemy = archerEnemyList.getChildren()[i];
-            enemy.direccion = new Phaser.Math.Vector2(player.x-enemy.x,player.y-enemy.y); 
-            enemy.setVelocityX(velocidad2 * enemy.direccion.x/2);
-            enemy.setVelocityY(velocidad2 * enemy.direccion.y/2);
-        }
+{  
+    /*for (var i = 0; i < archerEnemyList.getChildren().length; i++) 
+    {   //MOVIMIENTO ENEMIGO-DISPARO ENEMIGO//
+    }*/
+    if (muerto == false && inmovil == false) 
+    {
+        Phaser.Actions.Call(archerEnemyList.getChildren(), function(go) {
+            if (go.attack2 == true) 
+            {
+                scene.physics.moveTo(go, this.player.x, this.player.y, 100);
+                disparoArcher(go);
+                go.N--;
+            }
+        })
     }
 }
 
-function disparoArcher()
+function disparoArcher(enemy)
 {
-    if (attack3 == true) 
+    if (muerto == false) 
     {
-        if(N <= 0)
-        {   //TIRO TELEDIRIGIDO//
-            var bala = enemyArrowList.create(malo.x, malo.y,'enemyArrow');
-            bala.setScale(0.06,0.06);
-            bala.body.setSize(200, 200, 200, 200);
-            disparo = bala;
+        if (enemy.attack3 == true) 
+        {
+            if(enemy.N <= 0)
+            {   //TIRO TELEDIRIGIDO//
+                var bala = enemyArrowList.create(enemy.x, enemy.y,'enemyArrow');
+                bala.setScale(0.06,0.06);
+                bala.body.setSize(200, 200, 200, 200);
+                disparo = bala;
 
-            bala.direccion = new Phaser.Math.Vector2(player.x-malo.x,player.y-malo.y);
-            bala.direccion.normalize();
-            
-            N = 60;
-        }
+                bala.direccion = new Phaser.Math.Vector2(player.x-enemy.x,player.y-enemy.y);
+                bala.direccion.normalize();
 
-        for (var i = 0; i < enemyArrowList.getLength(); i++) 
-        {   //MOVIMIENTO TIRO TELEDIRIGIDO//
-            var bala = enemyArrowList.getChildren()[i];
-            bala.x = bala.x + velocidadF * bala.direccion.x;
-            bala.y = bala.y + velocidadF * bala.direccion.y;
+                scene.physics.moveTo(bala, this.player.x, this.player.y, 700);
+                disparoArcher(bala);
+                
+                enemy.N = 160;
+            }
+
+            for (var i = 0; i < enemyArrowList.getLength(); i++) 
+            {   //MOVIMIENTO TIRO TELEDIRIGIDO//
+                var bala = enemyArrowList.getChildren()[i];
+                //bala.x = bala.x + velocidadF * bala.direccion.x;
+                //bala.y = bala.y + velocidadF * bala.direccion.y;
+                if (enemy == undefined) 
+                {
+                    for (var i = 0; i < enemyArrowList.getLength(); i++)
+                    {
+                        bala[i].destroy();
+                    }
+                }
+            }
         }
     }
 }
@@ -374,6 +475,7 @@ function playerDieArrow(objeto1, objeto2)
     {
         this.player.destroy();
         inmovil = true;
+        muerto = true;
     }
 }
 
@@ -387,15 +489,16 @@ function decrementarVida()
 
     else if (variableCombate == 2) 
     {
-        vidas = vidas - 30;
+        vidas = vidas - 2;
         vidaText = vidaText.setText('Vidas: ' +vidas);
     }
 }
 
-function aumentarVida()
+function aumentarVida(objeto1, objeto2)
 {
-    vidas = vidas + 15;
+    vidas = vidas + 3;
     vidaText = vidaText.setText('Vidas: ' +vidas);
+    objeto2.destroy();
 }
 
 function playerMovement()
@@ -404,13 +507,13 @@ function playerMovement()
     {
         if (KeyA.isDown)
         {
-            player.setVelocityX(-300);
+            player.setVelocityX(-250);
             player.play('left');
         }
 
         else if (KeyD.isDown)
         {
-            player.setVelocityX(300);
+            player.setVelocityX(250);
             player.play('right');
         }
         else
@@ -420,12 +523,12 @@ function playerMovement()
 
         if (KeyW.isDown)
         {
-            player.setVelocityY(-300);
+            player.setVelocityY(-250);
         }
 
         else if (KeyS.isDown)
         {
-            player.setVelocityY(300);
+            player.setVelocityY(250);
             player.play('turn');
         }
         else
@@ -433,4 +536,14 @@ function playerMovement()
             player.setVelocityY(0);
         }
     }
+
+    player.detector.x = player.x;
+    player.detector.y = player.y;
+}
+
+function fade() {
+
+    //  You can set your own fade color and duration
+    game.cameras.main.fade(0x000000, 4000);
+
 }
