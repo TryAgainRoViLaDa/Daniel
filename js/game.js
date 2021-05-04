@@ -44,7 +44,6 @@ var malo2;
 var N = 160;
 var variableCombate = 0;
 
-var veracidad = false;
 var veracidad2 = false;
 var attack = false;
 var attack2 = false;
@@ -339,7 +338,6 @@ function enfrentamientoEbasicoP(objeto1, objeto2)
     {
         objeto2.destroy();
         enemigosM++;
-        veracidad = false;
         attack = false;
         var numeroR = Phaser.Math.Between(1, 1);
         if (numeroR == 1) 
