@@ -44,7 +44,6 @@ var malo2;
 var N = 160;
 var variableCombate = 0;
 
-var veracidad2 = false;
 var attack = false;
 var attack2 = false;
 var attack3 = false;
@@ -62,7 +61,7 @@ var C2T = false;
 function preload() {
 
     this.load.image('gameTiles', 'tileset/IceTileset.png');
-    this.load.tilemapTiledJSON('tilemap', 'maps/juanito.json');
+    this.load.tilemapTiledJSON('tilemap', 'maps/Nieve.json');
     this.load.image('NPC', 'assets/NPC.png');
     this.load.image('texto', 'assets/bafarada1.png');
     this.load.image('texto2', 'assets/bafarada2.png');
@@ -370,7 +369,6 @@ function enfrentamientoEarcherP(objeto1, objeto2)
     {
         enemigosM++;
         objeto2.destroy();
-        veracidad2 = false;
         objeto2.attack2 = false;
         objeto2.attack3 = false;
         var numeroR2 = Phaser.Math.Between(1, 3);
