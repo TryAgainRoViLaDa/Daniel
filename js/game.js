@@ -56,6 +56,11 @@ var C = 0;
 var C2 = 0;
 var CT = false;
 var C2T = false;
+var SBActivado = false;
+
+var velocidadP = 300;
+var Time = 0;
+var SBTime = 100;
 
 
 function preload() {
@@ -176,6 +181,7 @@ function create() {
     KeyW=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
     KeyS=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
     KeyE=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+    KeyQ=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
     SPACE=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
     // Overlaps
@@ -190,6 +196,7 @@ function create() {
     //Scoretexts
     vidaText = this.add.text(0, 0, 'Vidas: 7', { fontSize: '20px', fill: 'black' }).setScrollFactor(0);
     Quest = this.add.text(280, 0, 'Objetivo: Asesina a dos enemigos y encuentra al aldeano perdido', { fontSize: '15px', fill: 'black' }).setScrollFactor(0);
+    CoolDown = this.add.text(0, 20, 'CD: 0', { fontSize: '20px', fill: 'black' }).setScrollFactor(0);
 }
 
 function update()
@@ -199,6 +206,7 @@ function update()
     hablarNPC();
     movementBasicEnemy();
     movementArcherEnemy();
+    Speedboost();
     if (enemigosM >= 2) 
     {
         mision = true;
@@ -503,13 +511,13 @@ function playerMovement()
     {
         if (KeyA.isDown)
         {
-            player.setVelocityX(-250);
+            player.setVelocityX(-velocidadP);
             player.play('left');
         }
 
         else if (KeyD.isDown)
         {
-            player.setVelocityX(250);
+            player.setVelocityX(velocidadP);
             player.play('right');
         }
         else
@@ -519,12 +527,12 @@ function playerMovement()
 
         if (KeyW.isDown)
         {
-            player.setVelocityY(-250);
+            player.setVelocityY(-velocidadP);
         }
 
         else if (KeyS.isDown)
         {
-            player.setVelocityY(250);
+            player.setVelocityY(velocidadP);
             player.play('turn');
         }
         else
@@ -535,6 +543,47 @@ function playerMovement()
 
     player.detector.x = player.x;
     player.detector.y = player.y;
+}
+
+function Speedboost()
+{
+    if(Time <= 0)
+    {
+        if(KeyQ.isDown)
+        {
+            SBActivado = true;
+        }
+    }
+
+    if(SBActivado == true)
+    { 
+        if(SBTime >= 0)
+        {
+            velocidadP = 500;
+        }
+        else if(SBTime <= 0)
+        {
+            SBActivado = false;
+            velocidadP = 300;
+        }
+        SBTime--;
+        Time = 240;
+    }
+
+    if(SBActivado == false)
+    {
+        decrementarCoolDown();
+        SBTime = 100;
+    }
+}
+
+function decrementarCoolDown()
+{
+    if(Time >= 1)
+    {
+        Time = Time - 1;
+        CoolDown = CoolDown.setText('CD: ' +Time);
+    }
 }
 
 function fade() {
