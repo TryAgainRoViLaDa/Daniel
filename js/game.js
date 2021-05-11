@@ -62,6 +62,12 @@ var velocidadP = 300;
 var Time = 0;
 var SBTime = 100;
 
+var vidaE = 3;
+var inmunidadE = false;
+var CIE = 0;
+var DP = 1;
+var CF = 500;
+
 
 function preload() {
 
@@ -197,6 +203,7 @@ function create() {
     vidaText = this.add.text(0, 0, 'Vidas: 7', { fontSize: '20px', fill: 'black' }).setScrollFactor(0);
     Quest = this.add.text(280, 0, 'Objetivo: Asesina a dos enemigos y encuentra al aldeano perdido', { fontSize: '15px', fill: 'black' }).setScrollFactor(0);
     CoolDown = this.add.text(0, 20, 'CD: 0', { fontSize: '20px', fill: 'black' }).setScrollFactor(0);
+    furia = this.add.text(0, 40, 'Furia: 0', { fontSize: '20px', fill: 'black' }).setScrollFactor(0);
 }
 
 function update()
@@ -207,6 +214,7 @@ function update()
     movementBasicEnemy();
     movementArcherEnemy();
     Speedboost();
+    Furia();
     if (enemigosM >= 2) 
     {
         mision = true;
@@ -235,6 +243,15 @@ function contadores()
     if (C2T == true) 
     {
         C2--;
+    }
+
+    if(inmunidadE == true)
+    {
+        CIE--;
+        if(CIE <= 0)
+        {
+            inmunidadE = false;
+        }
     }
 }
 
@@ -343,15 +360,28 @@ function enfrentamientoEbasicoP(objeto1, objeto2)
     objeto2.attack = true;
     if (SPACE.isDown) 
     {
-        objeto2.destroy();
-        enemigosM++;
-        attack = false;
-        var numeroR = Phaser.Math.Between(1, 1);
-        if (numeroR == 1) 
+        if(inmunidadE == false && CIE <= 0)
         {
-            var heart = heartList.create(objeto2.x, objeto2.y, 'heart');
-            heart.setScale(0.1, 0.1);
+            vidaE = vidaE - DP;
+            inmunidadE = true;
+            CIE = 60;
         }
+
+        if(vidaE <= 0)
+        {
+            enemigosM++;
+            objeto2.destroy();
+            vidaE = 3;
+
+            var numeroR = Phaser.Math.Between(1, 1);
+            if (numeroR == 1) 
+            {
+                var heart = heartList.create(objeto2.x, objeto2.y, 'heart');
+                heart.setScale(0.1, 0.1);
+            }
+        }
+
+        attack = false;
     }
 
     variableCombate = 1;
@@ -503,6 +533,23 @@ function aumentarVida(objeto1, objeto2)
     vidas = vidas + 3;
     vidaText = vidaText.setText('Vidas: ' +vidas);
     objeto2.destroy();
+}
+
+function Furia()
+{
+    if(enemigosM >= 2)
+    {
+        DP = 2;
+        CF--;
+        furia = furia.setText('Furia: ' +CF);
+    }
+
+    if(CF <= 0)
+    {
+        DP = 1;
+        enemigosM = 0;
+        CF = 500;
+    }
 }
 
 function playerMovement()
