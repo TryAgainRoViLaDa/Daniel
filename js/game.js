@@ -9,7 +9,7 @@ var config = {
     physics:{
         default:'arcade',
         arcade:{
-            debug: false,
+            debug: true,
             gravity:{y:0}
         }
     },
@@ -63,6 +63,7 @@ var Time = 0;
 var SBTime = 100;
 
 var vidaE = 3;
+var vidaE2 = 2;
 var inmunidadE = false;
 var CIE = 0;
 var DP = 1;
@@ -81,11 +82,12 @@ function preload() {
     this.load.image('enemyArrow', 'assets/enemyArcher.png');
     this.load.image('heart', 'assets/heart.png');
     scene = this;
+    this.load.atlas('attack','assets/attack.png', 'assets/attack_atlas.json');
 
-    this.load.spritesheet('dude', 
+    /*this.load.spritesheet('dude', 
         'assets/personaje.png',
         { frameWidth: 32, frameHeight: 48 }
-    );
+    );*/
 }
    
 function create() {
@@ -107,15 +109,17 @@ function create() {
     // Camara-Player
     this.cameras.main.setBounds(0, 0, 1280 * 2, 1280 * 2);
     this.physics.world.setBounds(0, 0, 1280 * 2, 1280 * 2);
-    this.player = this.physics.add.sprite(0, 0, 'dude');
+    //this.player = this.physics.add.sprite(0, 0, 'dude');
+    this.player = this.physics.add.sprite(0, 0, 'attack');
     this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
 
     // Personajes
     // Player
     this.player.setBounce(0.2);
     this.player.setCollideWorldBounds(true);
-    this.player.setScale(0.7,0.7);
-    this.player.body.setSize(20, 8);
+    //this.player.setScale(0.7,0.7);
+    this.player.setScale(0.08,0.08);
+    this.player.body.setSize(200, 100);
     player = this.player;
 
     //NPC
@@ -161,7 +165,7 @@ function create() {
     this.physics.add.collider(enemyArrowList, obstaculos);
 
     //Animaciones
-    this.anims.create({
+    /*this.anims.create({
         key: 'left',
         frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 3 }),
         frameRate: 10,
@@ -179,6 +183,17 @@ function create() {
         frames: this.anims.generateFrameNumbers('dude', { start: 5, end: 8 }),
         frameRate: 10,
         repeat: -1
+    });*/
+
+    this.anims.create({
+        key:'attack',
+        frames: this.anims.generateFrameNames('attack', {
+            prefix: 'attack',
+            start: 0,
+            end: 10,
+        }),
+        repeat:0,
+        frameRate:30
     });
     
     // Eventos de teclado
@@ -221,6 +236,7 @@ function update()
     }
 }
 
+//Funcion para contadores
 function contadores()
 {
     if(cd>0)
@@ -255,6 +271,7 @@ function contadores()
     }
 }
 
+//Funcion para hablar con NPC
 function hablarNPC()
 {
     if (veracidadNPC == true) 
@@ -272,6 +289,7 @@ function hablarNPC()
     }
 }
 
+//Funcion para hablar con NPC
 function hablar1()
 {
     if(KeyE.isDown && cd==0 && mensaje==0 && inicio==0 && mision == true)
@@ -284,6 +302,7 @@ function hablar1()
     }
 }
 
+//Función para hablar con NPC
 function hablar2()    
 {
     if(SPACE.isDown && mensaje==1)
@@ -298,6 +317,7 @@ function hablar2()
     }   
 }
 
+//Funcion para hablar con NPC
 function textoInteraccion()
 {
     if(scorecd<=0 && mision == true)
@@ -308,6 +328,7 @@ function textoInteraccion()
     }
 }
 
+//Funcion para hablar con NPC
 function destruirTexto()
 {
     scoreText.destroy();
@@ -316,6 +337,7 @@ function destruirTexto()
     auxiliar=1;
 }
 
+//Creación de enemigo basico
 function crearEnemigoBasico(obj)
 {
     var enemy = basicEnemyList.create(obj.x, obj.y, 'enemigoBasico');
@@ -326,6 +348,7 @@ function crearEnemigoBasico(obj)
     enemy.attack = false;
 }
 
+//Movimiento de enemigo basico
 function movementBasicEnemy(enemy)
 { 
     /*for (var i = 0; i < basicEnemyList.getChildren().length; i++) 
@@ -354,7 +377,7 @@ function movementBasicEnemy(enemy)
     }
 }
 
-
+//Enfrentamiento enemigo basico-player
 function enfrentamientoEbasicoP(objeto1, objeto2)
 {
     objeto2.attack = true;
@@ -399,22 +422,34 @@ function enfrentamientoEbasicoP(objeto1, objeto2)
     }
 }
 
+//Enfrentamiento enemigo arquero-player
 function enfrentamientoEarcherP(objeto1, objeto2)
 {
     objeto2.attack3 = true;
     objeto2.attack2 = true;
     if (SPACE.isDown) 
     {
-        enemigosM++;
-        objeto2.destroy();
+        if(inmunidadE == false && CIE <= 0)
+        {
+            vidaE2 = vidaE2 - DP;
+            inmunidadE = true;
+            CIE = 60;
+        }
+
+        if(vidaE2 <= 0)
+        {
+            enemigosM++;
+            objeto2.destroy();
+            vidaE2 = 2;
+            var numeroR2 = Phaser.Math.Between(1, 3);
+            if (numeroR2 == 2)
+            {
+                var heart = heartList.create(objeto2.x, objeto2.y, 'heart');
+                heart.setScale(0.1, 0.1);
+            }
+        }
         objeto2.attack2 = false;
         objeto2.attack3 = false;
-        var numeroR2 = Phaser.Math.Between(1, 3);
-        if (numeroR2 == 2)
-        {
-            var heart = heartList.create(objeto2.x, objeto2.y, 'heart');
-            heart.setScale(0.1, 0.1);
-        }
     }
 
     variableCombate = 1;
@@ -431,6 +466,7 @@ function enfrentamientoEarcherP(objeto1, objeto2)
     }
 }
 
+//Creación enemigo arquero
 function crearEnemigoArcher(obj)
 {
     var enemy = archerEnemyList.create(obj.x, obj.y, 'enemigoArquero');
@@ -443,6 +479,7 @@ function crearEnemigoArcher(obj)
     enemy.N = 160;
 }
 
+//Movimiento enemigo arquero
 function movementArcherEnemy()
 {  
     /*for (var i = 0; i < archerEnemyList.getChildren().length; i++) 
@@ -461,6 +498,7 @@ function movementArcherEnemy()
     }
 }
 
+//Movimiento disparo del enemigo
 function disparoArcher(enemy)
 {
     if (muerto == false) 
@@ -500,6 +538,7 @@ function disparoArcher(enemy)
     }
 }
 
+//Función de muerte por flecha
 function playerDieArrow(objeto1, objeto2)
 {
     objeto2.destroy();
@@ -513,6 +552,7 @@ function playerDieArrow(objeto1, objeto2)
     }
 }
 
+//Decrementar vidas del player
 function decrementarVida()
 {
     if (variableCombate == 1) 
@@ -528,6 +568,7 @@ function decrementarVida()
     }
 }
 
+//Aumentar vidas
 function aumentarVida(objeto1, objeto2)
 {
     vidas = vidas + 3;
@@ -535,6 +576,7 @@ function aumentarVida(objeto1, objeto2)
     objeto2.destroy();
 }
 
+//Función mecanica de furia
 function Furia()
 {
     if(enemigosM >= 2)
@@ -552,6 +594,7 @@ function Furia()
     }
 }
 
+//Función movimiento del player
 function playerMovement()
 {
     if (inmovil == false) 
@@ -559,13 +602,13 @@ function playerMovement()
         if (KeyA.isDown)
         {
             player.setVelocityX(-velocidadP);
-            player.play('left');
+            //player.play('left');
         }
 
         else if (KeyD.isDown)
         {
             player.setVelocityX(velocidadP);
-            player.play('right');
+            //player.play('right');
         }
         else
         {
@@ -580,11 +623,16 @@ function playerMovement()
         else if (KeyS.isDown)
         {
             player.setVelocityY(velocidadP);
-            player.play('turn');
+            //player.play('turn');
         }
         else
         {
             player.setVelocityY(0);
+        }
+
+        if (SPACE.isDown) 
+        {
+            player.play('attack');
         }
     }
 
@@ -592,6 +640,7 @@ function playerMovement()
     player.detector.y = player.y;
 }
 
+//Función mecanica speedboost
 function Speedboost()
 {
     if(Time <= 0)
@@ -624,6 +673,7 @@ function Speedboost()
     }
 }
 
+//funcion cooldown speedboost
 function decrementarCoolDown()
 {
     if(Time >= 1)
