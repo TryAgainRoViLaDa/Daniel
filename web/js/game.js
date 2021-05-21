@@ -18,6 +18,8 @@ var KeyW;
 var KeyS;
 var KeyE;
 var KeyQ;
+var KeyX;
+var KeyV;
 var SPACE;
 var vidaText;
 var Quest;
@@ -78,8 +80,11 @@ var inmunidadE = false;
 var CIE = 0;
 var DP = 1;
 var CF = 500;
+var CoolDownHeal = 0;
 
 var heart;
+var corazones = null;
+var contadorCorazones = 0;
 
 
 class game extends Phaser.Scene
@@ -272,6 +277,8 @@ class game extends Phaser.Scene
         KeyS=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
         KeyE=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
         KeyQ=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
+        KeyX=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.X);
+        KeyV=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.V);
         SPACE=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
         // Overlaps
@@ -282,6 +289,7 @@ class game extends Phaser.Scene
         this.physics.add.overlap(this.player, archerEnemyList, this.enfrentamientoEarcherP, null, this);
         this.physics.add.overlap(this.player, enemyArrowList, this.playerDieArrow, null, this);
         this.physics.add.overlap(this.player, heartList, this.VidaI, null, this);
+        this.physics.add.overlap(this.player, heartList, this.consumir, null, this);
 
         //Scoretexts
         vidaText = this.add.text(0, 0, 'Vidas: 7', { fontSize: '20px', fill: 'black' }).setScrollFactor(0);
@@ -305,6 +313,7 @@ class game extends Phaser.Scene
         this.Furia();
         this.moverColliders();
         this.consumir();
+
         if (enemigosM >= 2) 
         {
             mision = true;
@@ -349,6 +358,11 @@ class game extends Phaser.Scene
                 inmunidadE = false;
             }
         }
+
+        if (CoolDownHeal >= 0) 
+        {
+            CoolDownHeal--;
+        }
     }
 
     //Funcion para hablar con NPC
@@ -365,6 +379,8 @@ class game extends Phaser.Scene
                     this.destruirTexto();
                     final=20;
                     pacifismo = false;
+                    Quest = Quest.setText('Objetivo: Completado!');
+                    Quest.x = 670;
                 }
             }
         }
@@ -373,7 +389,10 @@ class game extends Phaser.Scene
     //Funcion para hablar con NPC
     hablar1()
     {
-        pacifismo = true;
+        if (mision) 
+        {
+            pacifismo = true;
+        }
         if(KeyE.isDown && cd==0 && mensaje==0 && inicio==0 && mision == true)
         {
             texto = this.physics.add.sprite(NPCX+30, NPCY-70, 'texto');
@@ -527,7 +546,7 @@ class game extends Phaser.Scene
                 if (numeroR2 == 2)
                 {
                     var heart = heartList.create(objeto2.x, objeto2.y, 'heart');
-                    heart.setScale(0.1, 0.1);
+                    heart.setScale(0.2, 0.2);
                 }
             }
             objeto2.attack2 = false;
@@ -669,7 +688,7 @@ class game extends Phaser.Scene
     {  
         vidas = vidas + 3;
         vidaText = vidaText.setText('Vidas: ' +vidas);
-        objeto2.destroy();  
+        //objeto2.destroy();  
     }
 
     VidaI(objeto1, objeto2)
@@ -685,22 +704,60 @@ class game extends Phaser.Scene
         objeto2.y = inventario.y - 35;
         objeto2.setScrollFactor(0);
         heart = true;
+
+        if (contadorCorazones == 0) 
+        {
+            corazones = this.add.text((inventario.x - 115) + 23, inventario.y - 35, '0', { fontSize: '20px', fill: 'black' }).setScrollFactor(0);
+            contadorCorazones++;
+            corazones = corazones.setText('' +contadorCorazones);
+        }
+        else if (contadorCorazones >= 0) 
+        {
+            contadorCorazones++;
+            corazones = corazones.setText('' +contadorCorazones);
+        }
         //objeto2.x = inventario.huecos[0].x;
         //objeto2.y = inventario.huecos[0].y;
     }
 
-    consumir()
-    {
-        if (heart == true) 
+    consumir(objeto1, objeto2)
+    {   
+    
+        if (KeyV.isDown && heartList.getLength() > 0 && CoolDownHeal <= 0)
         {
-            if (KeyE.isDown) 
+            heartList.remove(heartList.getChildren()[heartList.getLength() - 1], true, true);
+            this.aumentarVida();
+            contadorCorazones--;
+            corazones = corazones.setText('' +contadorCorazones);
+            CoolDownHeal = 30;
+
+            if (contadorCorazones == 0) 
             {
-                heart.destroy();
-                this.aumentarVida();
+                corazones.destroy();
+                contadorCorazones = 0;
             }
         }
-    }
 
+        if (corazones)
+        {
+            //corazones++;
+            //corazones = corazones.setText('')
+        }
+        /*if (heart == true) 
+        {
+            if (KeyX.isDown) 
+            {
+                for (var i = 0; i < heartList.getChildren().length; i++) 
+                {   //MOVIMIENTO ENEMIGO-DISPARO ENEMIGO//
+                    var corazon = heartList.getChildren()[i];                 
+                    corazon.x = player.x;
+                    corazon.y = player.y;
+                }
+                this.aumentarVida();
+                heart = false;
+            }
+        }*/
+    }
     /*function powervida(nave, power) 
     {
         power.x = inventario.huecos[0].x;
